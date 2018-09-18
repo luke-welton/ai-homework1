@@ -26,29 +26,50 @@ class Node:
         self.g = 0 if prev is None else prev.g + 1
         self.h = 0
 
+    def calculate_manhattan(self):
+        h = 0
+        x = self.board.whitespace[0]
+        y = self.board.whitespace[1]
+
+        for i in range(4):
+            x_temp = x + (1 if i & 1 else -1)
+            y_temp = y + (1 if i & 2 else -1)
+
+            try:
+                h += self.find_goal_location(x_temp, y_temp)
+            except IndexError:
+                pass
+
+        self.h = h
+        self.f = self.g + self.h
+
     def calculate_h(self):
         h = 0
         for x in range(len(self.board.positions)):
             for y in range(len(self.board.positions[x])):
                 if self.board.positions[x][y] > 0:
-                    found = False
-                    i = 0
-                    j = 0
-
-                    while not found and i <= 4:
-                        if GOAL_STATE.positions[i][j] == self.board.positions[x][y]:
-                            found = True
-                        else:
-                            j = j + 1
-                            if j > 4:
-                                j = j % 5
-                                i = i + 1
-
-                    if found:
-                        h += abs(x - i) + abs(y - j)
+                    h += self.find_goal_location(x, y)
 
         self.h = h
         self.f = self.g + self.h
+
+    def find_goal_location(self, x, y):
+        found = False
+        i = 0
+        j = 0
+
+        while not found and i <= 4:
+            if GOAL_STATE.positions[i][j] == self.board.positions[x][y]:
+                found = True
+            else:
+                j = j + 1
+                if j > 4:
+                    j = j % 5
+
+                    i = i + 1
+        if found:
+            return abs(x - i) + abs(y - j)
+        return 0
 
     def generate_next(self):
         for move in self.board.generate_moves():
@@ -215,7 +236,9 @@ def main():
             closed_node = closed_queue.find(next_node)
 
             if open_node is None and closed_node is None:
+                # next_node.calculate_manhattan()
                 next_node.calculate_h()
+
                 open_queue.enqueue(next_node)
             elif open_node is not None and next_node.g < open_node.g:
                 open_node.update_node(next_node)
